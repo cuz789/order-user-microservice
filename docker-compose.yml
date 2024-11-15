@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    ports:
+      - "5673:5672"    # RabbitMQ default port
+      - "15673:15672"  # RabbitMQ management console
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-service-v1:
+    build:
+      context: ./user-service-v1
+    container_name: user-service
+    ports:
+      - "5000:5000"
+    environment:
+      - MONGO_URI=mongodb+srv://User00:Coen6313@cluster0.4otmd.mongodb.net/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  user-service-v2:
+    build:
+      context: ./user-service-v2
+    container_name: user-service-v2
+    ports:
+      - "5002:5002"  
+    environment:
+      - MONGO_URI=mongodb+srv://User00:Coen6313@cluster0.4otmd.mongodb.net/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    ports:
+      - "5001:5001"
+    environment:
+      - MONGO_URI=mongodb+srv://User00:Coen6313@cluster0.4otmd.mongodb.net/
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_DEFAULT_USER=user
+      - RABBITMQ_DEFAULT_PASS=password
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+    container_name: api-gateway
+    ports:
+      - "5003:5003"
+    environment:
+      - USER_SERVICE_V1_URL=http://user-service:5000/v1/users
+      - USER_SERVICE_V2_URL=http://user-service-v2:5001/v2/users
+      - ORDER_SERVICE_URL=http://order-service:5002/orders
+      - P_RATIO=0.5  # Adjusts traffic ratio for V1 and V2
+    depends_on:
+      - user-service-v1
+      - user-service-v2
+      - order-service
