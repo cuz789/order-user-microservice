@@ -38,7 +38,7 @@ services:
       context: ./user-service-v2
     container_name: user-service-v2
     ports:
-      - "5002:5002"
+      - "5001:5001"
     environment:
       - MONGO_URI=mongodb+srv://User00:Coen6313@cluster0.4otmd.mongodb.net/
       - RABBITMQ_HOST=rabbitmq
@@ -53,7 +53,7 @@ services:
       context: ./order-service
     container_name: order-service
     ports:
-      - "5001:5001"
+      - "5002:5002"
     environment:
       - MONGO_URI=mongodb+srv://User00:Coen6313@cluster0.4otmd.mongodb.net/
       - RABBITMQ_HOST=rabbitmq
